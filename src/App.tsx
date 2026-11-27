@@ -67,8 +67,11 @@ export default function App() {
   useEffect(() => {
     if (mapsApiKey) return;
     let active = true;
-    fetch("/api/maps-config")
-      .then((res) => (res.ok ? res.json() : null))
+    fetch("./api/maps-config")
+      .then((res) => {
+        const ct = res.headers.get("content-type") ?? "";
+        return res.ok && ct.includes("application/json") ? res.json() : null;
+      })
       .then((data) => {
         if (active && data?.apiKey) {
           setMapsApiKey(data.apiKey);

@@ -1436,7 +1436,29 @@ const CORE_ARTWORKS: ArtworkRecord[] = [
   },
 ];
 
+function resolveMediaUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (
+    /^(https?:)?\/\//i.test(url) ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+  const metaEnv = (import.meta as { env?: { BASE_URL?: string } }).env;
+  const base = metaEnv?.BASE_URL ?? "/";
+  const cleanBase = base.endsWith("/") ? base : `${base}/`;
+  return `${cleanBase}${url.replace(/^\/+/, "")}`;
+}
+
 export const ARTWORKS_CATALOG: ArtworkRecord[] = [
   ...CORE_ARTWORKS,
   ...(expandedArtworks as ArtworkRecord[]),
-];
+].map((art) => ({
+  ...art,
+  media: {
+    ...art.media,
+    thumb_url: resolveMediaUrl(art.media.thumb_url) ?? art.media.thumb_url,
+    full_url: resolveMediaUrl(art.media.full_url),
+  },
+}));
