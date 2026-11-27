@@ -1,0 +1,8 @@
+{
+  "name": "Acervo Brasilis — Buscador Semântico de Arte Brasileira",
+  "description": "Motor de busca semântico, cromático e geográfico para acervos e artistas brasileiros, do Barroco mineiro à arte contemporânea.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
