@@ -113,9 +113,9 @@ async function startServer() {
 
   app.post("/api/semantic-search", async (req, res) => {
     const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
-    if (!query) {
+    if (!query || query.length > 500) {
       res.status(400).json({
-        error: "Informe uma descrição ou termo de busca válido.",
+        error: "Informe uma descrição válida (até 500 caracteres).",
         code: "INVALID_QUERY",
       });
       return;
@@ -170,7 +170,7 @@ async function startServer() {
       });
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Erro ao consultar embeddings Gemini.";
+        err instanceof Error ? err.message : "";
       const status =
         message.includes("429") || message.includes("RESOURCE_EXHAUSTED")
           ? 429
@@ -178,7 +178,10 @@ async function startServer() {
             ? 403
             : 502;
       res.status(status).json({
-        error: message,
+        error:
+          status === 429
+            ? "Limite de requisições de embeddings excedido."
+            : "Serviço de embeddings temporariamente indisponível.",
         code: "EMBEDDING_UPSTREAM_ERROR",
       });
     }

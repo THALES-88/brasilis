@@ -1,6 +1,5 @@
 import type { FormEvent } from "react";
-import { Search, X, RotateCcw } from "lucide-react";
-import { CURATED_PIGMENTS } from "../data/catalog";
+import { Search, X, SlidersHorizontal, RotateCcw } from "lucide-react";
 import type { ArtworkCategory, RightsStatus, SourceProvider } from "../types/art";
 
 interface SearchControlsProps {
@@ -8,21 +7,22 @@ interface SearchControlsProps {
   onQueryInputChange: (val: string) => void;
   onSubmitQuery: (queryOverride?: string) => void;
   selectedHex: string | null;
-  onSelectHex: (hex: string | null) => void;
+  onClearHex: () => void;
   decadeRange: [number, number];
-  onDecadeRangeChange: (range: [number, number]) => void;
+  onClearDecadeRange: () => void;
   selectedCategory: ArtworkCategory | "todas";
-  onSelectCategory: (cat: ArtworkCategory | "todas") => void;
+  onClearCategory: () => void;
   selectedInstitutionName: string | null;
   onClearInstitution: () => void;
   selectedArtistName: string | null;
   selectedArtistQid: string | null;
   onClearArtist: () => void;
   selectedRights: RightsStatus | "todos";
-  onSelectRights: (status: RightsStatus | "todos") => void;
+  onClearRights: () => void;
   selectedProvider: SourceProvider | "todos";
-  onSelectProvider: (provider: SourceProvider | "todos") => void;
+  onClearProvider: () => void;
   onResetAll: () => void;
+  onOpenMegaMenu: () => void;
   isSearchingVector: boolean;
   searchModeLabel: string | null;
   totalResults: number;
@@ -31,44 +31,58 @@ interface SearchControlsProps {
 
 const SUGGESTED_QUERIES = [
   "abaporu e antropofagia modernista",
-  "profetas de aleijadinho em pedra-sabão",
-  "os retirantes e sertão árido",
-  "samba, morros e murais modernos",
-  "desvio para o vermelho e instalação",
+  "profetas em pedra-sabão",
+  "sertão árido e retirantes",
+  "samba e morros cariocas",
   "geometria sagrada afro-brasileira",
 ];
 
-const CATEGORIES: Array<{ id: ArtworkCategory | "todas"; label: string }> = [
-  { id: "todas", label: "Todas" },
-  { id: "pintura", label: "Pintura" },
-  { id: "escultura", label: "Escultura" },
-  { id: "gravura", label: "Gravura" },
-  { id: "desenho", label: "Desenho" },
-  { id: "fotografia", label: "Fotografia" },
-  { id: "instalacao", label: "Instalação" },
-  { id: "arte_popular", label: "Arte Popular" },
-];
+const CATEGORY_LABELS: Record<ArtworkCategory, string> = {
+  pintura: "Pintura",
+  escultura: "Escultura",
+  gravura: "Gravura",
+  desenho: "Desenho",
+  fotografia: "Fotografia",
+  instalacao: "Instalação",
+  arte_popular: "Arte Popular",
+  outro: "Outro",
+};
+
+const RIGHTS_LABELS: Record<RightsStatus, string> = {
+  public_domain: "Domínio Público",
+  cc_open: "Licença Aberta",
+  copyright_restricted: "Referencial",
+  unknown: "Não especificado",
+};
+
+const PROVIDER_LABELS: Record<SourceProvider, string> = {
+  tainacan: "Tainacan / Ibram",
+  wikidata: "Wikidata GLAM",
+  brasiliana: "Brasiliana",
+  institutional_api: "Catálogos Institucionais",
+};
 
 export function SearchControls({
   queryInput,
   onQueryInputChange,
   onSubmitQuery,
   selectedHex,
-  onSelectHex,
+  onClearHex,
   decadeRange,
-  onDecadeRangeChange,
+  onClearDecadeRange,
   selectedCategory,
-  onSelectCategory,
+  onClearCategory,
   selectedInstitutionName,
   onClearInstitution,
   selectedArtistName,
   selectedArtistQid,
   onClearArtist,
   selectedRights,
-  onSelectRights,
+  onClearRights,
   selectedProvider,
-  onSelectProvider,
+  onClearProvider,
   onResetAll,
+  onOpenMegaMenu,
   isSearchingVector,
   searchModeLabel,
   totalResults,
@@ -79,11 +93,11 @@ export function SearchControls({
     onSubmitQuery();
   };
 
+  const hasCustomDecade = decadeRange[0] !== 1640 || decadeRange[1] !== 2030;
   const hasActiveFilters =
     Boolean(queryInput.trim()) ||
     Boolean(selectedHex) ||
-    decadeRange[0] !== 1640 ||
-    decadeRange[1] !== 2030 ||
+    hasCustomDecade ||
     selectedCategory !== "todas" ||
     Boolean(selectedInstitutionName) ||
     Boolean(selectedArtistName) ||
@@ -93,32 +107,32 @@ export function SearchControls({
 
   return (
     <section
-      aria-label="Pesquisa semântica e filtros curatoriais"
-      className="border-b border-[#DDD8CE] bg-[#F7F6F2]"
+      aria-label="Pesquisa semântica do acervo"
+      className="border-b border-[#EAE8E3] bg-[#FAFAF8]"
     >
-      <div className="mx-auto max-w-[1360px] px-5 pt-10 pb-8 sm:px-8 sm:pt-12">
-        {/* Editorial Hero Header */}
-        <div className="max-w-3xl">
-          <p className="font-mono text-xs tracking-widest text-[#6E6A63] uppercase">
-            Índice Semântico · 1640 — 2025 · Rede de Acervos Públicos Brasileiros
+      <div className="mx-auto max-w-[1360px] px-5 pt-12 pb-9 sm:px-8 sm:pt-16 sm:pb-10">
+        {/* Minimalist Gallery Hero Header (inspired by lastmuseum.com) */}
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="font-mono text-[11px] tracking-[0.18em] text-[#706D67] uppercase">
+            Acervo Digital Brasileiro · 1640 — 2025
           </p>
           <h1
-            className="font-editorial mt-3 text-4xl font-medium tracking-tight text-[#141413] sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]"
+            className="font-editorial mt-3 text-4xl font-normal tracking-tight text-[#111110] sm:text-5xl lg:text-[3.35rem] lg:leading-[1.08]"
             style={{ textWrap: "balance" }}
           >
             Pesquise a arte brasileira por atmosfera, luz, pigmento ou conceito.
           </h1>
         </div>
 
-        {/* Semantic Search Form */}
-        <form onSubmit={handleFormSubmit} className="mt-8">
+        {/* Clean Central Semantic Search Input */}
+        <form onSubmit={handleFormSubmit} className="mx-auto mt-8 max-w-2xl">
           <label htmlFor="semantic-search-input" className="sr-only">
             Descreva uma cena, atmosfera, movimento ou artista brasileiro
           </label>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
             <div className="relative flex-1">
               <Search
-                className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#6E6A63]"
+                className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#706D67]"
                 aria-hidden="true"
               />
               <input
@@ -126,8 +140,8 @@ export function SearchControls({
                 type="search"
                 value={queryInput}
                 onChange={(e) => onQueryInputChange(e.target.value)}
-                placeholder='Ex.: "paisagem mineira melancólica ao entardecer" ou "geometria construtiva"'
-                className="h-12 w-full border border-[#C8C2B6] bg-white pr-10 pl-11 text-sm text-[#141413] placeholder:text-[#8A857C] focus:border-[#141413] focus:outline-none"
+                placeholder='Ex.: "paisagem mineira ao entardecer" ou "geometria construtiva"'
+                className="h-12 w-full border border-[#DCDAD3] bg-white pr-10 pl-11 text-sm text-[#111110] placeholder:text-[#8E8A82] transition-colors focus:border-[#111110] focus:outline-none"
               />
               {queryInput && (
                 <button
@@ -137,7 +151,7 @@ export function SearchControls({
                     onQueryInputChange("");
                     onSubmitQuery("");
                   }}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer p-1 text-[#6E6A63] hover:text-[#141413]"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer p-1 text-[#706D67] hover:text-[#111110]"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -146,16 +160,15 @@ export function SearchControls({
             <button
               type="submit"
               disabled={isSearchingVector}
-              className="h-12 cursor-pointer border border-[#141413] bg-[#141413] px-7 text-sm font-medium text-[#F7F6F2] transition-colors hover:bg-[#8B3A1E] hover:border-[#8B3A1E] disabled:opacity-60 whitespace-nowrap shrink-0"
+              className="h-12 cursor-pointer border border-[#111110] bg-[#111110] px-7 text-xs font-medium tracking-wider text-white uppercase transition-colors hover:bg-[#8B3A1E] hover:border-[#8B3A1E] disabled:opacity-60 whitespace-nowrap shrink-0"
             >
-              {isSearchingVector ? "Vetorizando..." : "Buscar"}
+              {isSearchingVector ? "Buscando..." : "Buscar"}
             </button>
           </div>
         </form>
 
-        {/* Suggested Semantic Prompts */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#6E6A63]">
-          <span className="font-medium text-[#141413]">Sugestões:</span>
+        {/* Quiet Inline Prompt Whispers */}
+        <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-[#706D67]">
           {SUGGESTED_QUERIES.map((prompt) => (
             <button
               key={prompt}
@@ -164,259 +177,136 @@ export function SearchControls({
                 onQueryInputChange(prompt);
                 onSubmitQuery(prompt);
               }}
-              className="cursor-pointer border-b border-dotted border-[#B7B0A2] pb-0.5 text-left transition-colors hover:border-[#8B3A1E] hover:text-[#8B3A1E]"
+              className="cursor-pointer border-b border-transparent pb-0.5 transition-colors hover:border-[#111110] hover:text-[#111110]"
             >
               “{prompt}”
             </button>
           ))}
         </div>
 
-        {/* Curated Pigment Palette + Timeline + Category Rail */}
-        <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[#DDD8CE] pt-6 lg:grid-cols-12 lg:items-end">
-          {/* Pigment Swatches */}
-          <div className="lg:col-span-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium tracking-wide text-[#6E6A63] uppercase">
-                Paleta Curada & Cor Dominante
-              </span>
-              {selectedHex && (
-                <button
-                  type="button"
-                  onClick={() => onSelectHex(null)}
-                  className="cursor-pointer font-mono text-xs text-[#8B3A1E] underline hover:text-[#141413]"
-                >
-                  Limpar cor ({selectedHex})
-                </button>
-              )}
-            </div>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {CURATED_PIGMENTS.map((pigment) => {
-                const active =
-                  selectedHex?.toLowerCase() === pigment.hex.toLowerCase();
-                return (
-                  <button
-                    key={pigment.hex}
-                    type="button"
-                    onClick={() =>
-                      onSelectHex(active ? null : pigment.hex)
-                    }
-                    aria-pressed={active}
-                    title={`${pigment.name} (${pigment.origin})`}
-                    className={`group flex cursor-pointer items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors whitespace-nowrap shrink-0 ${
-                      active
-                        ? "border-[#141413] bg-[#141413] text-[#F7F6F2]"
-                        : "border-[#DDD8CE] bg-[#EFECE6] text-[#141413] hover:border-[#141413]"
-                    }`}
-                  >
-                    <span
-                      className="h-3.5 w-3.5 shrink-0 border border-black/15"
-                      style={{ backgroundColor: pigment.hex }}
-                      aria-hidden="true"
-                    />
-                    <span>{pigment.name}</span>
-                  </button>
-                );
-              })}
+        {/* Quiet Status & Active Context Strip */}
+        <div className="mt-9 flex flex-wrap items-center justify-between gap-4 border-t border-[#EAE8E3] pt-4 text-xs text-[#706D67]">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="font-mono tabular-nums text-[#111110]">
+              {totalResults}{" "}
+              {totalResults === 1 ? "obra" : "obras"}
+              {searchModeLabel ? ` · ${searchModeLabel}` : ""}
+            </span>
 
-              <label
-                className="flex cursor-pointer items-center gap-1.5 border border-[#DDD8CE] bg-white px-2.5 py-1 text-xs text-[#6E6A63] hover:border-[#141413]"
-                title="Selecionar cor personalizada em HEX"
+            {selectedCategory !== "todas" && (
+              <button
+                type="button"
+                onClick={onClearCategory}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#DCDAD3] bg-white px-2.5 py-1 text-[#111110] hover:border-[#111110]"
               >
-                <input
-                  type="color"
-                  aria-label="Selecionar cor personalizada"
-                  value={selectedHex ?? "#8B3A1E"}
-                  onChange={(e) => onSelectHex(e.target.value.toUpperCase())}
-                  className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                <span>{CATEGORY_LABELS[selectedCategory]}</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
+
+            {selectedHex && (
+              <button
+                type="button"
+                onClick={onClearHex}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#DCDAD3] bg-white px-2.5 py-1 font-mono text-[#111110] hover:border-[#111110]"
+              >
+                <span
+                  className="h-2.5 w-2.5 border border-black/15"
+                  style={{ backgroundColor: selectedHex }}
+                  aria-hidden="true"
                 />
-                <span className="font-mono text-[11px]">HEX</span>
-              </label>
-            </div>
-          </div>
+                <span>{selectedHex}</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
 
-          {/* Interactive Timeline Range */}
-          <div className="lg:col-span-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium tracking-wide text-[#6E6A63] uppercase">
-                Recorte Histórico
-              </span>
-              <span className="font-mono tabular-figures text-xs font-medium text-[#141413]">
-                {decadeRange[0]} — {decadeRange[1]}
-              </span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="timeline-start"
-                  className="block text-[11px] text-[#6E6A63]"
-                >
-                  De {decadeRange[0]}
-                </label>
-                <input
-                  id="timeline-start"
-                  type="range"
-                  min={1640}
-                  max={2030}
-                  step={10}
-                  value={decadeRange[0]}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    onDecadeRangeChange([
-                      Math.min(val, decadeRange[1]),
-                      decadeRange[1],
-                    ]);
-                  }}
-                  className="timeline-slider mt-1 w-full"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="timeline-end"
-                  className="block text-[11px] text-[#6E6A63]"
-                >
-                  Até {decadeRange[1]}
-                </label>
-                <input
-                  id="timeline-end"
-                  type="range"
-                  min={1640}
-                  max={2030}
-                  step={10}
-                  value={decadeRange[1]}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    onDecadeRangeChange([
-                      decadeRange[0],
-                      Math.max(val, decadeRange[0]),
-                    ]);
-                  }}
-                  className="timeline-slider mt-1 w-full"
-                />
-              </div>
-            </div>
-          </div>
+            {hasCustomDecade && (
+              <button
+                type="button"
+                onClick={onClearDecadeRange}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#DCDAD3] bg-white px-2.5 py-1 font-mono tabular-nums text-[#111110] hover:border-[#111110]"
+              >
+                <span>
+                  {decadeRange[0]}–{decadeRange[1]}
+                </span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
 
-          {/* Rights Filter */}
-          <div className="lg:col-span-2">
-            <label
-              htmlFor="rights-filter"
-              className="block text-xs font-medium tracking-wide text-[#6E6A63] uppercase"
-            >
-              Direitos
-            </label>
-            <select
-              id="rights-filter"
-              value={selectedRights}
-              onChange={(e) =>
-                onSelectRights(e.target.value as RightsStatus | "todos")
-              }
-              className="mt-2.5 h-9 w-full border border-[#DDD8CE] bg-white px-2.5 text-xs text-[#141413] focus:border-[#141413] focus:outline-none"
-            >
-              <option value="todos">Todos os regimes</option>
-              <option value="public_domain">Domínio Público</option>
-              <option value="cc_open">Licença Aberta (CC)</option>
-              <option value="copyright_restricted">Referencial (Direitos Vigentes)</option>
-            </select>
-          </div>
-
-          {/* Aggregator / Source Provider Filter */}
-          <div className="lg:col-span-2">
-            <label
-              htmlFor="provider-filter"
-              className="block text-xs font-medium tracking-wide text-[#6E6A63] uppercase"
-            >
-              Fonte / Agregador
-            </label>
-            <select
-              id="provider-filter"
-              value={selectedProvider}
-              onChange={(e) =>
-                onSelectProvider(e.target.value as SourceProvider | "todos")
-              }
-              className="mt-2.5 h-9 w-full border border-[#DDD8CE] bg-white px-2.5 text-xs text-[#141413] focus:border-[#141413] focus:outline-none"
-            >
-              <option value="todos">Todas as fontes</option>
-              <option value="tainacan">Tainacan / Ibram</option>
-              <option value="wikidata">Wikidata & Wikimedia GLAM</option>
-              <option value="brasiliana">Brasiliana Iconográfica</option>
-              <option value="institutional_api">Catálogos Institucionais</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Category Filter Tabs + Result Count & Active Context Filters */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#DDD8CE] pt-4">
-          <div
-            role="group"
-            aria-label="Filtrar por tipologia da obra"
-            className="flex flex-wrap items-center gap-1.5"
-          >
-            {CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onSelectCategory(cat.id)}
-                  className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    active
-                      ? "bg-[#141413] text-[#F7F6F2]"
-                      : "bg-[#EFECE6] text-[#57534E] hover:bg-[#E5E0D6] hover:text-[#141413]"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs text-[#6E6A63]">
             {selectedInstitutionName && (
               <button
                 type="button"
                 onClick={onClearInstitution}
-                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#8B3A1E] px-2.5 py-1 text-[#8B3A1E] hover:bg-[#8B3A1E] hover:text-white"
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#8B3A1E] bg-white px-2.5 py-1 text-[#8B3A1E] hover:bg-[#8B3A1E] hover:text-white"
               >
-                <span>Acervo: {selectedInstitutionName}</span>
+                <span>{selectedInstitutionName}</span>
                 <X className="h-3 w-3" />
               </button>
             )}
+
             {selectedArtistName && (
               <button
                 type="button"
                 onClick={onClearArtist}
-                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#1E3A5F] px-2.5 py-1 text-[#1E3A5F] hover:bg-[#1E3A5F] hover:text-white"
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#1E3A5F] bg-white px-2.5 py-1 text-[#1E3A5F] hover:bg-[#1E3A5F] hover:text-white"
               >
                 <span>
-                  Artista: {selectedArtistName}
+                  {selectedArtistName}
                   {selectedArtistQid ? ` (${selectedArtistQid})` : ""}
                 </span>
                 <X className="h-3 w-3" />
               </button>
             )}
-            <span className="font-mono tabular-figures">
-              {totalResults}{" "}
-              {totalResults === 1 ? "obra catalogada" : "obras catalogadas"}
-              {searchModeLabel ? ` · ${searchModeLabel}` : ""}
-            </span>
+
+            {selectedRights !== "todos" && (
+              <button
+                type="button"
+                onClick={onClearRights}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#DCDAD3] bg-white px-2.5 py-1 text-[#111110] hover:border-[#111110]"
+              >
+                <span>{RIGHTS_LABELS[selectedRights]}</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
+
+            {selectedProvider !== "todos" && (
+              <button
+                type="button"
+                onClick={onClearProvider}
+                className="inline-flex cursor-pointer items-center gap-1.5 border border-[#DCDAD3] bg-white px-2.5 py-1 text-[#111110] hover:border-[#111110]"
+              >
+                <span>{PROVIDER_LABELS[selectedProvider]}</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={onResetAll}
-                className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#141413] underline hover:text-[#8B3A1E]"
+                className="inline-flex cursor-pointer items-center gap-1.5 text-[#706D67] hover:text-[#111110] whitespace-nowrap shrink-0"
               >
                 <RotateCcw className="h-3 w-3" aria-hidden="true" />
-                <span>Limpar filtros</span>
+                <span>Restaurar acervo</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={onOpenMegaMenu}
+              className="inline-flex cursor-pointer items-center gap-1.5 font-medium text-[#111110] underline decoration-[#DCDAD3] underline-offset-4 transition-colors hover:decoration-[#111110] whitespace-nowrap shrink-0"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Refinar por cor, época ou museu</span>
+            </button>
           </div>
         </div>
 
         {apiWarning && (
           <p
             role="status"
-            className="mt-4 border border-[#D6CEBE] bg-[#EFECE6] px-4 py-2.5 text-xs text-[#57534E]"
+            className="mt-4 border border-[#EAE8E3] bg-white px-4 py-2.5 text-center text-xs text-[#706D67]"
           >
             {apiWarning}
           </p>

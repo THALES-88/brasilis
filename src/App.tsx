@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ARTWORKS_CATALOG, BRAZILIAN_MUSEUMS } from "./data/catalog";
+import { groupArtistsByEntity } from "./lib/artist-entities";
 import { BrazilianArtSearchEngine } from "./lib/hybrid-search";
 import { Header, type AppSection } from "./components/Header";
 import { SearchControls } from "./components/SearchControls";
@@ -17,6 +18,8 @@ import type {
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<AppSection>("explorar");
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+
   const [queryInput, setQueryInput] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [serverSemanticScores, setServerSemanticScores] = useState<
@@ -88,6 +91,11 @@ export default function App() {
     []
   );
 
+  const totalArtistsCount = useMemo(
+    () => groupArtistsByEntity(ARTWORKS_CATALOG).length,
+    []
+  );
+
   const handleSubmitQuery = async (queryOverride?: string) => {
     const q = (queryOverride !== undefined ? queryOverride : queryInput).trim();
     setSubmittedQuery(q);
@@ -101,18 +109,20 @@ export default function App() {
 
     setIsSearchingVector(true);
     try {
-      const response = await fetch("/api/semantic-search", {
+      const response = await fetch("./api/semantic-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: q }),
       });
+      const ct = response.headers.get("content-type") ?? "";
+      const isJson = ct.includes("application/json");
 
-      if (response.ok) {
+      if (response.ok && isJson) {
         const data = await response.json();
         setServerSemanticScores(data.scores);
         setSearchModeLabel("Embeddings Gemini");
       } else {
-        const errData = await response.json().catch(() => null);
+        const errData = isJson ? await response.json().catch(() => null) : null;
         setServerSemanticScores(undefined);
         setSearchModeLabel("Índice Semântico Local");
         if (errData?.code === "MISSING_API_KEY") {
@@ -175,6 +185,29 @@ export default function App() {
     );
   }, [selectedInstitutionId]);
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedHex) count++;
+    if (decadeRange[0] !== 1640 || decadeRange[1] !== 2030) count++;
+    if (selectedCategory !== "todas") count++;
+    if (selectedInstitutionId) count++;
+    if (selectedArtistName || selectedArtistQid) count++;
+    if (selectedRights !== "todos") count++;
+    if (selectedProvider !== "todos") count++;
+    return count;
+  }, [
+    selectedHex,
+    decadeRange,
+    selectedCategory,
+    selectedInstitutionId,
+    selectedArtistName,
+    selectedArtistQid,
+    selectedRights,
+    selectedProvider,
+  ]);
+
+  const hasActiveFilters = activeFilterCount > 0 || Boolean(queryInput.trim());
+
   const handleResetAll = () => {
     setQueryInput("");
     setSubmittedQuery("");
@@ -224,7 +257,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F6F2] text-[#141413]">
+    <div className="flex min-h-screen flex-col bg-[#FAFAF8] text-[#111110]">
       {quotaExceeded && (
         <div className="sticky top-0 z-50 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-900 shadow-sm md:text-sm">
           <span>
@@ -245,7 +278,27 @@ export default function App() {
       <Header
         activeSection={activeSection}
         onSelectSection={setActiveSection}
+        isMegaMenuOpen={isMegaMenuOpen}
+        onToggleMegaMenu={() => setIsMegaMenuOpen((open) => !open)}
+        onCloseMegaMenu={() => setIsMegaMenuOpen(false)}
+        activeFilterCount={activeFilterCount}
         onRandomArtwork={handleRandomArtwork}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        decadeRange={decadeRange}
+        onDecadeRangeChange={setDecadeRange}
+        selectedHex={selectedHex}
+        onSelectHex={setSelectedHex}
+        selectedInstitutionId={selectedInstitutionId}
+        onSelectInstitution={setSelectedInstitutionId}
+        selectedRights={selectedRights}
+        onSelectRights={setSelectedRights}
+        selectedProvider={selectedProvider}
+        onSelectProvider={setSelectedProvider}
+        onResetAll={handleResetAll}
+        totalCatalogCount={ARTWORKS_CATALOG.length}
+        totalArtistsCount={totalArtistsCount}
+        hasActiveFilters={hasActiveFilters}
       />
 
       <main className="flex-1">
@@ -263,11 +316,11 @@ export default function App() {
               }}
               onSubmitQuery={handleSubmitQuery}
               selectedHex={selectedHex}
-              onSelectHex={setSelectedHex}
+              onClearHex={() => setSelectedHex(null)}
               decadeRange={decadeRange}
-              onDecadeRangeChange={setDecadeRange}
+              onClearDecadeRange={() => setDecadeRange([1640, 2030])}
               selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
+              onClearCategory={() => setSelectedCategory("todas")}
               selectedInstitutionName={selectedInstitutionName}
               onClearInstitution={() => setSelectedInstitutionId(null)}
               selectedArtistName={selectedArtistName}
@@ -277,10 +330,11 @@ export default function App() {
                 setSelectedArtistQid(null);
               }}
               selectedRights={selectedRights}
-              onSelectRights={setSelectedRights}
+              onClearRights={() => setSelectedRights("todos")}
               selectedProvider={selectedProvider}
-              onSelectProvider={setSelectedProvider}
+              onClearProvider={() => setSelectedProvider("todos")}
               onResetAll={handleResetAll}
+              onOpenMegaMenu={() => setIsMegaMenuOpen(true)}
               isSearchingVector={isSearchingVector}
               searchModeLabel={searchModeLabel}
               totalResults={results.length}
@@ -338,10 +392,10 @@ export default function App() {
         onFilterByInstitution={handleFilterByInstitution}
       />
 
-      <footer className="border-t border-[#DDD8CE] bg-[#EFECE6] py-8 text-xs text-[#6E6A63]">
+      <footer className="border-t border-[#EAE8E3] bg-[#F3F2EE] py-8 text-xs text-[#706D67]">
         <div className="mx-auto flex max-w-[1360px] flex-col justify-between gap-4 px-5 sm:flex-row sm:items-center sm:px-8">
           <div>
-            <span className="font-editorial text-base font-semibold text-[#141413]">
+            <span className="font-editorial text-base font-semibold text-[#111110]">
               Acervo Brasilis
             </span>
             <span className="mx-2" aria-hidden="true">
@@ -355,21 +409,21 @@ export default function App() {
             <button
               type="button"
               onClick={() => setActiveSection("explorar")}
-              className="cursor-pointer hover:text-[#141413] hover:underline"
+              className="cursor-pointer hover:text-[#111110] hover:underline"
             >
               Explorar Acervo
             </button>
             <button
               type="button"
               onClick={() => setActiveSection("movimentos")}
-              className="cursor-pointer hover:text-[#141413] hover:underline"
+              className="cursor-pointer hover:text-[#111110] hover:underline"
             >
               Linha do Tempo
             </button>
             <button
               type="button"
               onClick={() => setActiveSection("mapa")}
-              className="cursor-pointer hover:text-[#141413] hover:underline"
+              className="cursor-pointer hover:text-[#111110] hover:underline"
             >
               Rede de Museus
             </button>

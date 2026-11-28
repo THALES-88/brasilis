@@ -7,11 +7,11 @@
 }
 
 :root {
-  --bg-paper: #f7f6f2;
-  --bg-limestone: #efece6;
-  --ink-primary: #141413;
-  --ink-muted: #6e6a63;
-  --border-hairline: #ddd8ce;
+  --bg-paper: #fafaf8;
+  --bg-limestone: #f3f2ee;
+  --ink-primary: #111110;
+  --ink-muted: #706d67;
+  --border-hairline: #eae8e3;
   --accent-terracotta: #8b3a1e;
   --accent-colonial: #1e3a5f;
 }
@@ -48,20 +48,20 @@ input[type="range"].timeline-slider {
 }
 
 input[type="range"].timeline-slider::-webkit-slider-runnable-track {
-  height: 2px;
-  background: #d6d1c7;
+  height: 1px;
+  background: #d8d5ce;
 }
 
 input[type="range"].timeline-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 9999px;
-  background: #141413;
-  border: 2px solid #f7f6f2;
-  box-shadow: 0 0 0 1px #141413;
-  margin-top: -6px;
+  background: #111110;
+  border: 2px solid #fafaf8;
+  box-shadow: 0 0 0 1px #111110;
+  margin-top: -5.5px;
   transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 

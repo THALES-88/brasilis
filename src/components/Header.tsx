@@ -1,11 +1,13 @@
-import { Shuffle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { MegaMenu, type MegaMenuProps } from "./MegaMenu";
 
 export type AppSection = "explorar" | "artistas" | "movimentos" | "mapa";
 
-interface HeaderProps {
-  activeSection: AppSection;
-  onSelectSection: (section: AppSection) => void;
-  onRandomArtwork: () => void;
+interface HeaderProps extends Omit<MegaMenuProps, "isOpen" | "onClose"> {
+  isMegaMenuOpen: boolean;
+  onToggleMegaMenu: () => void;
+  onCloseMegaMenu: () => void;
+  activeFilterCount: number;
 }
 
 const NAV_ITEMS: Array<{ id: AppSection; label: string }> = [
@@ -18,21 +20,28 @@ const NAV_ITEMS: Array<{ id: AppSection; label: string }> = [
 export function Header({
   activeSection,
   onSelectSection,
-  onRandomArtwork,
+  isMegaMenuOpen,
+  onToggleMegaMenu,
+  onCloseMegaMenu,
+  activeFilterCount,
+  ...megaMenuProps
 }: HeaderProps) {
   return (
-    <header className="border-b border-[#DDD8CE] bg-[#F7F6F2]">
-      <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-3.5 sm:gap-8 sm:px-8 sm:py-4">
+    <header className="relative z-40 border-b border-[#EAE8E3] bg-[#FAFAF8]">
+      <div className="relative z-20 mx-auto flex max-w-[1360px] items-center justify-between gap-8 bg-[#FAFAF8] px-4 py-3.5 sm:px-8 sm:py-4">
         {/* Zone 1: Single text element wordmark */}
         <button
           type="button"
-          onClick={() => onSelectSection("explorar")}
-          className="font-editorial cursor-pointer text-left text-xl font-semibold tracking-tight text-[#141413] whitespace-nowrap shrink-0 sm:text-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#141413]"
+          onClick={() => {
+            onSelectSection("explorar");
+            onCloseMegaMenu();
+          }}
+          className="font-editorial cursor-pointer text-left text-xl font-semibold tracking-tight text-[#111110] whitespace-nowrap shrink-0 sm:text-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#111110]"
         >
           Acervo Brasilis
         </button>
 
-        {/* Zone 2 (Desktop): 4 single-line navigation links */}
+        {/* Zone 2 (Desktop): 4 clean single-line navigation links */}
         <nav
           aria-label="Navegação principal"
           className="hidden sm:flex items-center gap-7"
@@ -43,12 +52,15 @@ export function Header({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onSelectSection(item.id)}
+                onClick={() => {
+                  onSelectSection(item.id);
+                  onCloseMegaMenu();
+                }}
                 aria-current={isActive ? "page" : undefined}
-                className={`cursor-pointer border-b-2 py-1 text-sm font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#141413] ${
+                className={`cursor-pointer border-b py-1 text-sm font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#111110] ${
                   isActive
-                    ? "border-[#8B3A1E] text-[#141413]"
-                    : "border-transparent text-[#6E6A63] hover:border-[#C5BFB2] hover:text-[#141413]"
+                    ? "border-[#111110] text-[#111110]"
+                    : "border-transparent text-[#706D67] hover:border-[#C9C6BE] hover:text-[#111110]"
                 }`}
               >
                 {item.label}
@@ -57,24 +69,37 @@ export function Header({
           })}
         </nav>
 
-        {/* Zone 3: 1 primary action */}
+        {/* Zone 3: 1 primary action — Collapsible Mega Menu Trigger */}
         <div className="flex items-center shrink-0">
           <button
             type="button"
-            onClick={onRandomArtwork}
-            aria-label="Obra Aleatória"
-            className="inline-flex cursor-pointer items-center gap-1.5 border border-[#141413] bg-[#141413] px-3 py-1.5 text-xs font-medium tracking-wide text-[#F7F6F2] transition-colors hover:bg-[#8B3A1E] hover:border-[#8B3A1E] sm:gap-2 sm:px-4 sm:py-2 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#141413]"
+            onClick={onToggleMegaMenu}
+            aria-expanded={isMegaMenuOpen}
+            aria-controls="curatorial-mega-menu"
+            className={`inline-flex cursor-pointer items-center gap-2 border px-4 py-2 text-xs font-medium tracking-wide transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111110] ${
+              isMegaMenuOpen
+                ? "border-[#111110] bg-[#111110] text-white"
+                : "border-[#DDDAD2] bg-white text-[#111110] hover:border-[#111110]"
+            }`}
           >
-            <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Obra Aleatória</span>
+            <span>
+              Curadoria
+              {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                isMegaMenuOpen ? "rotate-180" : "rotate-0"
+              }`}
+              aria-hidden="true"
+            />
           </button>
         </div>
       </div>
 
-      {/* Mobile navigation strip: unclipped full-width access to all 4 sections */}
+      {/* Mobile navigation strip */}
       <nav
         aria-label="Navegação principal móvel"
-        className="flex sm:hidden items-center justify-between border-t border-[#E6E1D6] px-4 py-1.5"
+        className="relative z-20 flex sm:hidden items-center justify-between border-t border-[#EAE8E3] bg-[#FAFAF8] px-4 py-1.5"
       >
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
@@ -82,12 +107,15 @@ export function Header({
             <button
               key={item.id}
               type="button"
-              onClick={() => onSelectSection(item.id)}
+              onClick={() => {
+                onSelectSection(item.id);
+                onCloseMegaMenu();
+              }}
               aria-current={isActive ? "page" : undefined}
-              className={`cursor-pointer border-b-2 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#141413] ${
+              className={`cursor-pointer border-b py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111110] ${
                 isActive
-                  ? "border-[#8B3A1E] text-[#141413]"
-                  : "border-transparent text-[#6E6A63] hover:text-[#141413]"
+                  ? "border-[#111110] text-[#111110]"
+                  : "border-transparent text-[#706D67] hover:text-[#111110]"
               }`}
             >
               {item.label}
@@ -95,6 +123,14 @@ export function Header({
           );
         })}
       </nav>
+
+      <MegaMenu
+        isOpen={isMegaMenuOpen}
+        onClose={onCloseMegaMenu}
+        activeSection={activeSection}
+        onSelectSection={onSelectSection}
+        {...megaMenuProps}
+      />
     </header>
   );
 }
